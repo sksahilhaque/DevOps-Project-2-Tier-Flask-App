@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <title>My Blog</title>
+  </head>
+  <body>
+    <h1>My Blog Posts</h1>
+
+    <a href="{{ url_for('create_post') }}">Create New Post</a>
+    <hr />
+
+    {% for post in posts %}
+    <h2>{{ post[1] }}</h2>
+    <small>{{ post[3] }}</small>
+    <p>{{ post[2] }}</p>
+    <hr />
+    {% else %}
+    <p>No blog posts yet.</p>
+    {% endfor %}
+  </body>
+</html>
