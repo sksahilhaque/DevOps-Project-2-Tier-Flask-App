@@ -23,17 +23,14 @@ jobs:
 
       - name: Setup SSH key
         run: |
-          echo "${{ secrets.EC2_SSH_KEY_BASE64 }}" | base64 -d > /tmp/ssh_key
-          chmod 600 /tmp/ssh_key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key_path: /tmp/ssh_key
-          port: 22
-          script: |
+        run: |
+          ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             docker pull ${{ secrets.DOCKER_USERNAME }}/two-tier-flask-app:latest
             docker stop two-tier-flask-app || true
             docker rm two-tier-flask-app || true
@@ -43,3 +40,4 @@ jobs:
               -e MYSQL_PASSWORD=root \
               -e MYSQL_DB=mydb \
               ${{ secrets.DOCKER_USERNAME }}/two-tier-flask-app:latest
+          EOF
