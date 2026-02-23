@@ -31,10 +31,20 @@ jobs:
       - name: Deploy to EC2
         run: |
           ssh -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            docker pull ${{ secrets.DOCKER_USERNAME }}/two-tier-flask-app:latest
-            docker stop two-tier-flask-app || true
-            docker rm two-tier-flask-app || true
-            docker run -d -p 5000:5000 --name two-tier-flask-app \
+            # Install Docker if not present
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update
+              sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+              sudo usermod -aG docker ubuntu
+            fi
+            
+            # Pull and run the container
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/two-tier-flask-app:latest
+            sudo docker stop two-tier-flask-app || true
+            sudo docker rm two-tier-flask-app || true
+            sudo docker run -d -p 5000:5000 --name two-tier-flask-app \
               -e MYSQL_HOST=mysql \
               -e MYSQL_USER=root \
               -e MYSQL_PASSWORD=root \
