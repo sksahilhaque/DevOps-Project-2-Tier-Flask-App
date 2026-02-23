@@ -40,11 +40,32 @@ jobs:
               sudo usermod -aG docker ubuntu
             fi
             
-            # Pull and run the container
+            # Create Docker network if it doesn't exist
+            sudo docker network create app-network || true
+            
+            # Deploy MySQL container
+            sudo docker stop mysql || true
+            sudo docker rm mysql || true
+            sudo docker run -d \
+              --name mysql \
+              --network app-network \
+              -e MYSQL_ROOT_PASSWORD=root \
+              -e MYSQL_DATABASE=mydb \
+              -p 3306:3306 \
+              mysql:8.0
+            
+            # Wait for MySQL to be ready
+            echo "Waiting for MySQL to start..."
+            sleep 15
+            
+            # Pull and run the Flask app container
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/two-tier-flask-app:latest
             sudo docker stop two-tier-flask-app || true
             sudo docker rm two-tier-flask-app || true
-            sudo docker run -d -p 5000:5000 --name two-tier-flask-app \
+            sudo docker run -d \
+              --name two-tier-flask-app \
+              --network app-network \
+              -p 5000:5000 \
               -e MYSQL_HOST=mysql \
               -e MYSQL_USER=root \
               -e MYSQL_PASSWORD=root \
